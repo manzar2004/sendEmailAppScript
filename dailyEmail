@@ -1,0 +1,45 @@
+
+function dailyMailer() {
+  var sheet = SpreadsheetApp.getActive().getSheetByName('Broadcast Data');        //selecting the sheet on which there is a data
+  var lastRow = sheet.getDataRange().getLastRow();                                //getting data last row 
+  var sdata = sheet.getDataRange().getDisplayValues();                            //getting all the values from the data range
+  var date = Utilities.formatDate(new Date(Date.now()), "GMT+5.5", "dd-MMM-yy");  //getting today's date in the required format
+  var count=0;
+  var emailIds=[];
+  var batchCodes=[];
+  var messages=[];
+  
+  for(i=1;i<lastRow;i++)
+  {
+    if(sdata[i][4].length > 15 && sdata[i][5].length > 5)
+    {
+      count++;
+      var message="Hi "+sdata[i][3]+",<br/><br/>Please broadcast the following message in your Batch:<b> "+sdata[i][0]+"</b> today.<br/><br/><b>Message:</b> <pre>"+sdata[i][5]+"</pre><br/><br/>Regards<br/>";
+      emailIds.push(sdata[i][3]);
+      batchCodes.push(sdata[i][0]);
+      messages.push(message);
+      MailApp.sendEmail({
+         to: sdata[i][4],
+         subject: "BroadCast the Message:"__("+date+")",
+         htmlBody: message,
+         name: 'Your Name'
+       }); 
+    }
+    
+  }
+  
+  if(count>0)
+  {
+    var broadcastMessage="<table border=1><th>Name</th><th>Batch Code</th><th>Message</th>";
+    for(var x=0;x<count;x++)
+    {
+      broadcastMessage = broadcastMessage+"<tr><td>"+emailIds[x]+"</td><td>"+batchCodes[x]+"</td><td>"+messages[x]+"</td></tr>";
+    }
+    MailApp.sendEmail({
+         to: 'adminone@gmail.com',          //Email id,
+         subject: "Consolidated Report of Broadcast__"+date+"",
+         htmlBody: "Dear All,<br/><br/>The following messages were broadcasted today.<br/><br/>"+broadcastMessage+"</table><br/><br/>Regards,",
+         name: 'Broadcast Report',
+       }); 
+  }
+}

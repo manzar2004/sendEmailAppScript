@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
+
+    <style>
+    table {
+    font-size:12px;
+    background-color:#fff;
+    width: 100%;
+    }
+    table thead tr th {
+    background-color: #009067;
+    color: #fff;
+    }
+    .responsive-table tbody tr:hover{
+    background-color: #b2dfdb;
+    }
+    body{
+    background-color: #b0d466;
+    width: 100%;
+    }
+    .nocolor{
+    background-color: none;
+    }
+    
+    @media screen and (max-width: 992px) 
+    {
+     table {
+     font-size: 20px;
+     border: 1px solid #000;
+     }
+     tr {
+      padding : 15px;
+      border: 1px solid #000;
+     }
+    }
+    
+    #alertmessage{
+      font-size: 20px;
+      color: green;
+      text-align: center; 
+    }
+    </style>
+  </head>
+  <body>
+    
+<div class="container">
+    <div class="row" style="background-color: #fff;">
+        <div class="input-field col s12">
+            <label for="yourname"> From</label>
+            <input type="text" placeholder="Your Name" id="yourname" >
+        </div>
+	</div><!--CLOSE row containing buttons--->
+
+
+	<div class="row" style="background-color: #fff;">
+        <div class="input-field col s12">
+            <label for="datepickedstart"> Regarding</label>
+            <input type="text" placeholder="Suggestion Regarding" id="datepickedstart" >
+        </div>
+	</div><!--CLOSE row containing buttons--->
+
+	<div class="row" style="background-color: #fff;">
+		<div class="input-field col s12">
+            <label for="suggestiondetails">Explain in Detail</label>
+            <textarea id="suggestiondetail" class="materialize-textarea" placeholder="Suggestion details"></textarea>
+            <span class="helper-text" data-success="right" id="alertmessage">...</span>
+
+        </div>
+	</div><!--CLOSE row containing table--->
+    
+    
+    <div class="row" style="background-color: #fff;">
+		<div class="input-field col s12">
+            <input type="file" id="fileupload" multiple>
+            <input type="hidden" id="filetest" value=""/>
+        </div>
+	</div><!--CLOSE row containing table--->
+    
+    
+    <div class="row" style="background-color: #fff;">
+        <div class="input-field col s6">
+			<button class="btn waves-effect waves-light" type="submit" name="action" id="btn">Submit
+			<i class="material-icons right">send</i>
+			</button>
+	    </div>
+    </div>
+    
+    <div class="row" style="background-color: #fff;">
+    <div id="progressbar">
+       <div class="progress-label"></div>   
+    </div>
+    </div>
+</div>   <!--CLOSE CONTAINER--->
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+    var elems = document.querySelectorAll('select');
+    var instances = M.FormSelect.init(elems);
+    });
+   
+    var numUploads = {};
+    numUploads.done = 0;
+    numUploads.total = 0;
+    var filename="";
+    document.getElementById('btn').addEventListener('click',iteratorFileUpload);
+   
+    
+    
+    //This function is called when the Button is cliked on the web app
+    function sendTheMessage()
+    {
+        var yourname = document.getElementById("yourname").value;
+        var suggestionTitle = document.getElementById("datepickedstart").value;
+        var suggestionDetail = document.getElementById("suggestiondetail").value;
+        var len = yourname.length;
+        var len1 = suggestionTitle.length;
+        var len2 = suggestionDetail.length;
+        var filename = document.getElementById('filetest').value;
+        console.log(len,len1,len2);
+        if(len>3 && len1>5 && len2>10)
+        {
+        document.querySelector('#alertmessage').innerText = 'Please Wait.. Your Message is being Sent';
+        document.querySelector('#btn').disabled = true;
+        google.script.run.withSuccessHandler(updateDiv).sendEmailNow(yourname,suggestionTitle,suggestionDetail,filename);
+        }
+        else
+        {
+        document.querySelector('#alertmessage').innerText = 'Please fill all the values correctly.';
+        setTimeout(function(){resetALL()}, 2000);
+        }
+    }
+    
+    function updateDiv(data)
+    {
+      //console.log(new Date());
+      document.querySelector('#alertmessage').innerText = 'Your message has been sent.';
+      document.querySelector('#alertmessage').display = "block";
+      document.getElementById("datepickedstart").value="";
+      document.getElementById("suggestiondetail").value="";
+      document.getElementById("fileupload").value="";
+      document.getElementById("yourname").value="";
+      setTimeout(function(){resetALL()}, 5000);
+    }
+    
+    function resetALL()
+    {
+    //console.log(new Date());
+    document.querySelector('#alertmessage').innerText="";
+    document.querySelector('#alertmessage').display = "none";
+    document.getElementById('filetest').value = "";
+    document.querySelector('#btn').disabled = false;
+    }
+    
+    
+    // Upload the files into a folder in drive
+    // This is set to send them all to one folder (specificed in the .gs file)
+    function iteratorFileUpload() {
+         var ret = false;
+         var allFiles = document.getElementById('fileupload').files;
+        //console.log(allFiles);
+    if (allFiles.length == 0) {
+        console.log('No file selected!');
+        sendTheMessage();
+    } else {
+        //Show Progress Bar
+
+        numUploads.total = allFiles.length;
+        $('#progressbar').progressbar({
+        value : false
+        });//.append("<div class='caption'>37%</div>");
+        $(".progress-label").html('Preparing files for upload');
+        // Send each file at a time
+        for (var i = 0; i < allFiles.length; i++) {
+            //console.log(i);
+            sendFileToDrive(allFiles[i]);
+        }
+        
+    }
+    
+    }
+    
+    function sendFileToDrive(file) {
+    //var filename = file.name;
+    var reader = new FileReader();
+    reader.onload = function (e) {
+        var content = reader.result;
+        console.log('Sending ' + file.name);
+        var currFolder = 'uploadimages';
+        google.script.run.withSuccessHandler(updateProgressbar).uploadFileToDrive(content, currFolder);
+    }
+    reader.readAsDataURL(file);
+    }
+    
+    function updateProgressbar( idUpdate ){
+        filename = filename +  idUpdate + ", ";
+        document.getElementById('filetest').value = filename;
+        console.log('Received: ' + idUpdate);
+        numUploads.done++;
+        var porc = Math.ceil((numUploads.done / numUploads.total)*100);
+        $("#progressbar").progressbar({value: porc });
+        $(".progress-label").text(numUploads.done +'/'+ numUploads.total);
+        if( numUploads.done == numUploads.total ){
+        sendTheMessage();
+        numUploads.done = 0;
+        };
+    }
+    </script>
+  </body>
+</html>
+
+
